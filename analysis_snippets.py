@@ -167,6 +167,42 @@ def lassocv_reg(df, x_vars, y_var, test_size=0.2):
     plt.yticks(sorted([i + 1 for i in range(coefs.shape[0])], reverse=True), coefs['variable'])
     plt.xlabel('abs coefs')
     plt.show()
+    
+ 
+def simple_dtree(df, x_list, y_var, max_depth=3, regressor=False, min_samples_split=2, test_size=0.3):
+    """
+    instant DecisionTree model
+    """
+    from sklearn.tree import DecisionTreeRegressor
+    from sklearn.tree import  DecisionTreeClassifier
+    from sklearn.model_selection import train_test_split
+    from dtreeviz.trees import dtreeviz
+
+    X = df[x_list]
+    y = df[y_var]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=123, test_size=test_size)
+
+    # build model, and fitting
+    if regressor:
+        model = DecisionTreeRegressor(max_depth=max_depth, random_state=123, min_samples_split=min_samples_split)
+    else:
+        model = DecisionTreeClassifier(max_depth=max_depth, random_state=123, min_samples_split=min_samples_split)
+    model.fit(X_train, y_train)
+
+    # plot
+    print('Train score: {:.3f}'.format(model.score(X_train, y_train)))
+    print('Test score: {:.3f}'.format(model.score(X_test, y_test)))
+    viz = dtreeviz(
+        model,
+        X_train=X,
+        y_train=y,
+        target_name=y_var,
+        feature_names=x_list,
+        precision=2,
+        class_names=None if model.classes_ is None else model.classes_.tolist(),
+    ) 
+    viz.view()
+    return model
 
     
 def plot_decision_path(tree_model, df, x_vars):
