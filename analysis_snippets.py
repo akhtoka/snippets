@@ -14,112 +14,156 @@ from IPython.display import display
 #plt.rcParams['font.family'] = 'IPAexGothic'
 
 
+def hml_kmeans(clst_list, n_clst):
+    # HML用のkmeansクラスタリング
+    # クラスタ結果の表示、クラスタ番号を平均の高い順に変更する
 
-class AnalysisSnippets():
+    RANDOM_STATE = 123
+    vector_array = np.array(clst_list)
+    ROWS_NUM = len(vector_array)
+    vector_array = vector_array.reshape(ROWS_NUM, 1)
 
-    def hml_kmeans(self, clst_list, n_clst):
-        # HML用のkmeansクラスタリング
-        # クラスタ結果の表示、クラスタ番号を平均の高い順に変更する
+    clusters = KMeans(n_clusters=n_clst, random_state=RANDOM_STATE).fit_predict(vector_array)
 
-        RANDOM_STATE = 123
-        vector_array = np.array(clst_list)
-        ROWS_NUM = len(vector_array)
-        vector_array = vector_array.reshape(ROWS_NUM, 1)
+    # 元のリストとクラスタでpd.DataFrameの作成
+    clst_df = pd.DataFrame({"var": clst_list, "cluster": clusters})
 
-        clusters = KMeans(n_clusters=n_clst, random_state=RANDOM_STATE).fit_predict(vector_array)
+    # クラスタ毎の統計量を確認し、デフォルトではmeanでクラスタ番号を昇順に
+    clst_result = clst_df.groupby(["cluster"])["var"].agg(["mean", "count", "min", "max", "median"]).reset_index()
+    clst_result['rank_by_mean'] = clst_result["mean"].rank(ascending=False).astype("int")
+    display(clst_result)
+    convert_rules = dict(clst_result.set_index("cluster").rank_by_mean)
 
-        # 元のリストとクラスタでpd.DataFrameの作成
-        clst_df = pd.DataFrame({"var": clst_list, "cluster": clusters})
-
-        # クラスタ毎の統計量を確認し、デフォルトではmeanでクラスタ番号を昇順に
-        clst_result = clst_df.groupby(["cluster"])["var"].agg(["mean", "count", "min", "max", "median"]).reset_index()
-        clst_result['rank_by_mean'] = clst_result["mean"].rank(ascending=False).astype("int")
-        display(clst_result)
-        convert_rules = dict(clst_result.set_index("cluster").rank_by_mean)
-
-        return list(clst_df["cluster"].map(convert_rules))
+    return list(clst_df["cluster"].map(convert_rules))
 
 
-    def print_cmx(self, y_true, y_pred, labels):
+def print_cmx(y_true, y_pred, labels):
 
-        # めっちゃ綺麗な混合行列を出力する関数
-        # ヒートマップ機能付き
+    # めっちゃ綺麗な混合行列を出力する関数
+    # ヒートマップ機能付き
 
-        cmx_data = confusion_matrix(y_true, y_pred, labels=labels)
-        print(cmx_data)
-        df_cmx = pd.DataFrame(cmx_data, index=labels, columns=labels)
+    cmx_data = confusion_matrix(y_true, y_pred, labels=labels)
+    print(cmx_data)
+    df_cmx = pd.DataFrame(cmx_data, index=labels, columns=labels)
 
-        plt.figure(figsize=(6, 4.5))
-        plt.rcParams['font.size'] = 15
-        sn.heatmap(df_cmx, cmap='Reds', annot=True, fmt="d", xticklabels=True, yticklabels=True)
-        # plt.savefig('heatmap.png')
-        ax = plt.gca()
-        ax.xaxis.set_ticks_position("top")  # x軸目盛りは軸の上、bottomで下になる
-        ax.set_yticklabels(reversed(labels), rotation=0)
-        ax.set_xlabel("predicted label")
-        ax.set_ylabel("real label")
-        plt.show()
+    plt.figure(figsize=(6, 4.5))
+    plt.rcParams['font.size'] = 15
+    sn.heatmap(df_cmx, cmap='Reds', annot=True, fmt="d", xticklabels=True, yticklabels=True)
+    # plt.savefig('heatmap.png')
+    ax = plt.gca()
+    ax.xaxis.set_ticks_position("top")  # x軸目盛りは軸の上、bottomで下になる
+    ax.set_yticklabels(reversed(labels), rotation=0)
+    ax.set_xlabel("predicted label")
+    ax.set_ylabel("real label")
+    plt.show()
 
 
-    def RF_classifier(self, df, y_column, feature_columns, test_rate):
+def RF_classifier(df, y_column, feature_columns, test_rate):
 
-        # クラス分類用ランダムフォレスト
-        # 混合行列や重要度の高い変数を可視化する
+    # クラス分類用ランダムフォレスト
+    # 混合行列や重要度の高い変数を可視化する
 
-        # 説明変数、目的変数の作成
-        X = df.loc[:, feature_columns].values
-        Y = df.loc[:, y_column].values
+    # 説明変数、目的変数の作成
+    X = df.loc[:, feature_columns].values
+    Y = df.loc[:, y_column].values
 
-        # 学習用、検証用データに分割
-        (X_train, X_test, Y_train, Y_test) = train_test_split(X, Y, test_size=test_rate, random_state=123)
+    # 学習用、検証用データに分割
+    (X_train, X_test, Y_train, Y_test) = train_test_split(X, Y, test_size=test_rate, random_state=123)
 
-        '''
-        # モデル構築、パラメータはデフォルト
-        parameters = {
-            'n_estimators'      : [5, 10, 20, 30, 50],
-            'max_features'      : [3, 5, 10, 15, 20],
-            'random_state'      : [0],
-            'n_jobs'            : [2],
-            'min_samples_split' : [3, 5, 10, 15, 20, 25, 30],
-            'max_depth'         : [3, 5, 10, 15, 20, 25, 30, 50, 100]
+    '''
+    # モデル構築、パラメータはデフォルト
+    parameters = {
+        'n_estimators'      : [5, 10, 20, 30, 50],
+        'max_features'      : [3, 5, 10, 15, 20],
+        'random_state'      : [0],
+        'n_jobs'            : [2],
+        'min_samples_split' : [3, 5, 10, 15, 20, 25, 30],
+        'max_depth'         : [3, 5, 10, 15, 20, 25, 30, 50, 100]
+    }
+
+    clf = GridSearchCV(RandomForestClassifier(), parameters)
+    clf.fit(X_train, Y_train)
+    print(clf.best_estimator_)'''
+
+    model = RandomForestClassifier(n_estimators=20, max_depth=4, max_features=None, bootstrap=True)
+
+    print(model.get_params())
+    model.fit(X_train, Y_train)
+
+    # 正解率
+    print("正解率 : " + str(model.score(X_test, Y_test) * 100) + "%")
+    print("訓練データの正解率 : " + str(model.score(X_train, Y_train) * 100) + "%")
+
+    # confusion matrix　を確認する
+    print("confusion matrix")
+    prediction = model.predict(X_test)
+    labels = list(set(Y))
+    print_cmx(Y_test, prediction, labels)
+
+    # 効いてる変数を順に並べる
+    importances = pd.DataFrame(
+        {
+            'variable': feature_columns,
+            'importance': model.feature_importances_
         }
+    ).sort_values('importance', ascending=False).reset_index(drop=True)
+    display(importances)
 
-        clf = GridSearchCV(RandomForestClassifier(), parameters)
-        clf.fit(X_train, Y_train)
-        print(clf.best_estimator_)'''
+    IMP = importances.copy()
+    plt.figure(figsize=(5, 7))
+    plt.plot(IMP.importance, sorted([i + 1 for i in range(IMP.shape[0])], reverse=True), 'o-')
+    plt.yticks(sorted([i + 1 for i in range(IMP.shape[0])], reverse=True), IMP.variable)
+    plt.xlabel('importance')
+    # plt.xlabel('重要度')
+    plt.show()
 
-        model = RandomForestClassifier(n_estimators=20, max_depth=4, max_features=None, bootstrap=True)
-
-        print(model.get_params())
-        model.fit(X_train, Y_train)
-
-        # 正解率
-        print("正解率 : " + str(model.score(X_test, Y_test) * 100) + "%")
-        print("訓練データの正解率 : " + str(model.score(X_train, Y_train) * 100) + "%")
-
-        # confusion matrix　を確認する
-        print("confusion matrix")
-        prediction = model.predict(X_test)
-        labels = list(set(Y))
-        self.print_cmx(Y_test, prediction, labels)
-
-        # 効いてる変数を順に並べる
-        importances = pd.DataFrame(
-            {
-                'variable': feature_columns,
-                'importance': model.feature_importances_
-            }
-        ).sort_values('importance', ascending=False).reset_index(drop=True)
-        display(importances)
-
-        IMP = importances.copy()
-        plt.figure(figsize=(5, 7))
-        plt.plot(IMP.importance, sorted([i + 1 for i in range(IMP.shape[0])], reverse=True), 'o-')
-        plt.yticks(sorted([i + 1 for i in range(IMP.shape[0])], reverse=True), IMP.variable)
-        plt.xlabel('importance')
-        # plt.xlabel('重要度')
-        plt.show()
-
-        return importances
+    return importances
 
 
+def lassocv_reg(df, x_vars, y_var, test_size=0.2):
+    """
+    instant Lasso Regression CV
+    """
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.linear_model import LassoCV
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error
+    import numpy as np
+    
+    X = df[x_vars]
+    y = df[y_var]
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=123)
+    scaler = StandardScaler()
+    clf = LassoCV(alphas=10 ** np.arange(-6, 1, 0.1), cv=5)
+
+    scaler.fit(X_train)
+    clf.fit(scaler.transform(X_train), y_train)
+    
+    # score
+    y_pred = clf.predict(scaler.transform(X_test))
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    print(f'rmse score: {rmse}')
+    
+    # coefs
+    coefs = pd.DataFrame(
+        {
+            'variable': x_vars,
+            'coefs': clf.coef_.tolist(),
+        }).sort_values('coefs', ascending=False).reset_index(drop=True)
+    plt.figure(figsize=(5, 7))
+    plt.plot(coefs['coefs'], sorted([i + 1 for i in range(coefs.shape[0])], reverse=True), 'o-')
+    plt.yticks(sorted([i + 1 for i in range(coefs.shape[0])], reverse=True), coefs['variable'])
+    plt.xlabel('coefs')
+    plt.show()
+    
+    coefs = pd.DataFrame(
+        {
+            'variable': x_vars,
+            'coefs': np.abs(clf.coef_.tolist()),
+        }).sort_values('coefs', ascending=False).reset_index(drop=True)
+    plt.figure(figsize=(5, 7))
+    plt.plot(coefs['coefs'], sorted([i + 1 for i in range(coefs.shape[0])], reverse=True), 'o-')
+    plt.yticks(sorted([i + 1 for i in range(coefs.shape[0])], reverse=True), coefs['variable'])
+    plt.xlabel('abs coefs')
+    plt.show()
