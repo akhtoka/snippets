@@ -256,7 +256,7 @@ def plot_decision_path(tree_model, df, x_vars):
     # indicator matrix at the position (i, j) indicates that the sample i goes
     # through the node j.
 
-    node_indicator = model.decision_path(X)
+    node_indicator = tree_model.decision_path(X)
 
     # Similarly, we can also have the leaves ids reached by each sample.
 
