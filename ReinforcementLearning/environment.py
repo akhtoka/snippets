@@ -122,12 +122,15 @@ class Environment:
 
         return reward, done
 
-    def reset(self, action):
+    def reset(self):
         self.agent_state = State(self.row_length - 1, 0)
         return self.agent_state
 
     def step(self, action):
+        # self.agent_state, を与えて次の状態を得る
         next_state, reward, done = self.transit(self.agent_state, action)
+
+        # self.agent_stateとactionから得たnext_actionでself.agent_stateを上書きする
         if next_state is not None:
             self.agent_state = next_state
 
@@ -144,6 +147,7 @@ class Environment:
             next_states.append(s)
             probs.append(transition_probs[s])
 
-        next_state = np.random_choice(next_states, p=probs)
+        # 次の状態の確率選択はこの箇所で
+        next_state = np.random.choice(next_states, p=probs)
         reward, done = self.reward_func(next_state)
         return next_state, reward, done
