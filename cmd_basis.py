@@ -168,7 +168,6 @@ def insert_row(df, table, replace_val):
                     msg = "BigQuery Insert Error:\nsample:\n{}\nerror:\n{}"
                     raise Exception(msg.format(row_data[0:5], ret))
     else:
-        # テーブルが存在しなければデータフレームをBigQueryに格納する
         print('{} CREATE TABLE'.format(full_table))
         gbq.to_gbq(df, full_table, project_id)
 
@@ -198,7 +197,6 @@ def backup_gbq(path,
 
 
 def get_daily_start_end(start, end, table, date_col, media=None):
-    """ start end が指定されない場合は、BQ最新保存日の次の日から三日前まで """
     print("{} - {}".format(start, end))
     limit_day_count = int(get_common_config()['bigquery']['daily_tmp_limit'])
     if start is None or end is None:
