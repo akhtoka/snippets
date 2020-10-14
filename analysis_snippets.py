@@ -5,7 +5,7 @@ import seaborn as sn
 from sklearn.metrics import confusion_matrix
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.grid_search import GridSearchCV
 from imblearn.ensemble import BalancedRandomForestClassifier
 from IPython.display import display
