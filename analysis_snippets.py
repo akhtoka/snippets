@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import train_test_split
 from sklearn.grid_search import GridSearchCV
+from imblearn.ensemble import BalancedRandomForestClassifier
 from IPython.display import display
 
 #%matplotlib inline
@@ -168,6 +169,8 @@ def lassocv_reg(df, x_vars, y_var, test_size=0.2):
     plt.xlabel('abs coefs')
     plt.show()
     
+
+    
  
 def simple_dtree(df, x_list, y_var, max_depth=3, regressor=False, min_samples_split=2, test_size=0.3):
     """
@@ -203,6 +206,63 @@ def simple_dtree(df, x_list, y_var, max_depth=3, regressor=False, min_samples_sp
     ) 
     viz.view()
     return model
+
+
+def BalancedRF_classifier(df, y_column, feature_columns, test_rate):
+
+    # 不均衡クラス分類用ランダムフォレスト
+    # 混合行列や重要度の高い変数を可視化する
+
+    # 説明変数、目的変数の作成
+    X = df.loc[:, feature_columns].values
+    Y = df.loc[:, y_column].values
+
+    # 学習用、検証用データに分割
+    (X_train, X_test, Y_train, Y_test) = train_test_split(X, Y, test_size=test_rate, random_state=123, shuffle=True)
+
+    '''
+    # モデル構築、パラメータはデフォルト
+    parameters = {
+        'n_estimators'      : [5, 10, 20, 30, 50],
+        'max_features'      : [3, 5, 10, 15, 20],
+        'random_state'      : [0],
+        'n_jobs'            : [2],
+        'min_samples_split' : [3, 5, 10, 15, 20, 25, 30],
+        'max_depth'         : [3, 5, 10, 15, 20, 25, 30, 50, 100]
+    }
+    clf = GridSearchCV(RandomForestClassifier(), parameters)
+    clf.fit(X_train, Y_train)
+    print(clf.best_estimator_)'''
+
+    model = BalancedRandomForestClassifier(n_jobs=1, n_estimators=30, sampling_strategy='not minority')   
+
+    print(model.get_params())
+    model.fit(X_train, Y_train)
+
+    # 正解率
+    print("正解率 : " + str(model.score(X_test, Y_test) * 100) + "%")
+    print("訓練データの正解率 : " + str(model.score(X_train, Y_train) * 100) + "%")
+
+    # confusion matrix　を確認する
+    print("confusion matrix")
+    prediction = model.predict(X_test)
+    labels = list(set(Y))
+    print_cmx(Y_test, prediction, labels)
+
+    # 効いてる変数を調べる
+    importances = None
+    i = np.array([
+        e['classifier'].feature_importances_
+        
+        for e in model.estimators_ 
+    ])
+    avg_i = np.array([
+        e['classifier'].feature_importances_
+        for e in model.estimators_ 
+    ]).mean(axis=0)
+    importances = plot_importance(avg_i, feature_columns)
+
+    return model, importances, (X_train, X_test, Y_train, Y_test)
 
     
 def plot_decision_path(tree_model, df, x_vars):
