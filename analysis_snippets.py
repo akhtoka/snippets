@@ -252,12 +252,12 @@ def BalancedRF_classifier(df, y_column, feature_columns, test_rate):
     # 効いてる変数を調べる
     importances = None
     i = np.array([
-        e['classifier'].feature_importances_
+        e.feature_importances_
         
         for e in model.estimators_ 
     ])
     avg_i = np.array([
-        e['classifier'].feature_importances_
+        e.feature_importances_
         for e in model.estimators_ 
     ]).mean(axis=0)
     importances = plot_importance(avg_i, feature_columns)
