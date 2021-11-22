@@ -248,7 +248,7 @@ def BalancedRF_classifier(df, y_column, feature_columns, test_rate):
     prediction = model.predict(X_test)
     labels = list(set(Y))
     print_cmx(Y_test, prediction, labels)
-
+    
     # 効いてる変数を調べる
     importances = None
     i = np.array([
@@ -260,7 +260,23 @@ def BalancedRF_classifier(df, y_column, feature_columns, test_rate):
         e.feature_importances_
         for e in model.estimators_ 
     ]).mean(axis=0)
-    importances = plot_importance(avg_i, feature_columns)
+    
+    importances = pd.DataFrame(
+        {
+            'variable': feature_columns,
+            'importance': avg_i
+        }
+    ).sort_values('importance', ascending=False).reset_index(drop=True)
+    display(importances)
+    
+    IMP = importances.copy()
+    plt.figure(figsize=(5, 7))
+    plt.plot(IMP.importance, sorted([i + 1 for i in range(IMP.shape[0])], reverse=True), 'o-')
+    plt.yticks(sorted([i + 1 for i in range(IMP.shape[0])], reverse=True), IMP.variable)
+    plt.xlabel('importance')
+    # plt.xlabel('重要度')
+    plt.show()
+    
 
     return model, importances, (X_train, X_test, Y_train, Y_test)
 
