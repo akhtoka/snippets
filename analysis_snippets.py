@@ -195,8 +195,8 @@ def simple_dtree(df, x_list, y_var, max_depth=3, regressor=False, min_samples_sp
     print('Test score: {:.3f}'.format(model.score(X_test, y_test)))
     viz = dtreeviz(
         model,
-        X_train=X,
-        y_train=y,
+        x_data=X,
+        y_data=y,
         target_name=y_var,
         feature_names=x_list,
         precision=2,
