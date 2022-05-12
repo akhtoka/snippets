@@ -429,3 +429,73 @@ def LGBMRegressor(df, y_column, feature_columns, test_rate=0.3):
     print('test rmse', rmse)
 
     return model
+
+def LGBMClassifier(df, y_column, feature_columns, test_rate=0.3):
+
+    # 説明変数、目的変数の作成
+    X = df.loc[:, feature_columns].values
+    y = df.loc[:, y_column].values
+
+    # 学習用、検証用データに分割
+    (X_train, X_test, y_train, y_test) = train_test_split(X, y, test_size=test_rate, random_state=123)
+    
+    # trainのデータセットの3割をモデル学習時のバリデーションデータとして利用する
+    (X_train, X_valid, y_train, y_valid) = train_test_split(X_train, y_train, test_size=test_rate, random_state=123)
+
+    # LightGBMを利用するのに必要なフォーマットに変換
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_valid, y_valid, reference=lgb_train)
+    
+    # LightGBMのパラメータ設定
+    params = {
+        'task': 'train',            # タスクを訓練に設定
+        'boosting_type': 'gbdt',    # GBDTを指定
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'class_weight': 'balanced',
+        #'lambda_l1': trial.suggest_loguniform('lambda_l1', 1e-8, 10.0),
+        #'lambda_l2': trial.suggest_loguniform('lambda_l2', 1e-8, 10.0),
+        #'num_leaves': trial.suggest_int('num_leaves', 2, 256),
+        #'feature_fraction': trial.suggest_uniform('feature_fraction', 0.4, 1.0),
+        #'bagging_fraction': trial.suggest_uniform('bagging_fraction', 0.4, 1.0),
+        #'bagging_freq': trial.suggest_int('bagging_freq', 1, 7),
+        #'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
+    }
+    # LightGBM学習
+    lgb_results = {} 
+    model = lgb.train(
+        params,                           # ハイパラ
+        lgb_train,                        # 訓練データ
+        valid_sets=[lgb_train, lgb_eval], # 訓練データとテストデータ
+        valid_names=['Train', 'Test'],    # データセットの名前をそれぞれ設定
+        num_boost_round=100,              # 計算回数
+        early_stopping_rounds=50,         # アーリーストッピング設定
+        evals_result=lgb_results,
+        verbose_eval=-1,                  # ログを最後の1つだけ表示
+    ) 
+    print(model.params)
+    # 損失推移を表示
+    loss_train = lgb_results['Train']['binary_logloss']
+    loss_eval = lgb_results['Test']['binary_logloss']   
+
+    fig = plt.figure()
+    plt.xlabel('Iteration')
+    plt.ylabel('logloss')
+    plt.plot(loss_train, label='train loss')
+    plt.plot(loss_eval, label='eval loss')
+
+    # LightGBM推論
+    y_pred = model.predict(X_test, num_iteration=model.best_iteration)
+    y_pred = np.where(y_pred >= 0.5, 1, 0)
+    print(y_pred.shape)
+    print(y_pred[0:10])
+    
+    # 正解率
+    print("テストデータの正解率 : " + str((sum(y_test == y_pred) / len(y_pred)) * 100) + "%")
+
+    # confusion matrix　を確認する
+    print("confusion matrix")
+    labels = list(set(y))
+    print_cmx(y_test, y_pred, labels)
+
+    return model, (X_train, X_test, y_train, y_test)
