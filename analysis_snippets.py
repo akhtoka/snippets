@@ -371,3 +371,64 @@ def plot_decision_path(tree_model, df, x_vars):
     print("\nThe following samples %s share the node %s in the tree"
           % (sample_ids, common_node_id))
     print("It is %s %% of all nodes." % (100 * len(common_node_id) / n_nodes,))
+    
+# import lightgbm as lgb
+import optuna.integration.lightgbm as lgb
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+
+def LGBMRegressor(df, y_column, feature_columns, test_rate=0.3):
+
+    # 説明変数、目的変数の作成
+    X = df.loc[:, feature_columns].values
+    y = df.loc[:, y_column].values
+
+    # 学習用、検証用データに分割
+    (X_train, X_test, y_train, y_test) = train_test_split(X, y, test_size=test_rate, random_state=123)
+    
+    # trainのデータセットの3割をモデル学習時のバリデーションデータとして利用する
+    (X_train, X_valid, y_train, y_valid) = train_test_split(X_train, y_train, test_size=test_rate, random_state=123)
+
+    # LightGBMを利用するのに必要なフォーマットに変換
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_valid, y_valid, reference=lgb_train)
+    
+    # LightGBMのパラメータ設定
+    params = {
+          'task': 'train',            # タスクを訓練に設定
+          'boosting_type': 'gbdt',    # GBDTを指定
+          'objective': 'regression',  # 回帰を指定
+          'metric': 'rmse',           # 回帰の損失（誤差）
+    }
+    # LightGBM学習
+    lgb_results = {} 
+    model = lgb.train(
+        params,                           # ハイパラ
+        lgb_train,                        # 訓練データ
+        valid_sets=[lgb_train, lgb_eval], # 訓練データとテストデータ
+        valid_names=['Train', 'Test'],    # データセットの名前をそれぞれ設定
+        num_boost_round=100,              # 計算回数
+        early_stopping_rounds=50,         # アーリーストッピング設定
+        evals_result=lgb_results,
+        verbose_eval=-1,                  # ログを最後の1つだけ表示
+    ) 
+    print(model.params)
+    # 損失推移を表示
+    loss_train = lgb_results['Train']['rmse']
+    loss_eval = lgb_results['Test']['rmse']   
+
+    fig = plt.figure()
+    plt.xlabel('Iteration')
+    plt.ylabel('logloss')
+    plt.plot(loss_train, label='train loss')
+    plt.plot(loss_eval, label='eval loss')
+
+    # LightGBM推論
+    y_pred = model.predict(X_test, num_iteration=model.best_iteration)
+    
+    # 評価
+    rmse = mean_squared_error(y_test, y_pred, squared=False)
+    print('test rmse', rmse)
+
+    return model
