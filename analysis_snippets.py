@@ -10,10 +10,6 @@ from sklearn.grid_search import GridSearchCV
 from imblearn.ensemble import BalancedRandomForestClassifier
 from IPython.display import display
 
-#%matplotlib inline
-#plt.style.use('ggplot')
-#plt.rcParams['font.family'] = 'IPAexGothic'
-
 
 def hml_kmeans(clst_list, n_clst):
     # HML用のkmeansクラスタリング
@@ -59,14 +55,14 @@ def print_cmx(y_true, y_pred, labels):
     plt.show()
 
 
-def RF_classifier(df, y_column, feature_columns, test_rate):
+def RFClassifier(df, target_column, feature_columns, test_rate):
 
     # クラス分類用ランダムフォレスト
     # 混合行列や重要度の高い変数を可視化する
 
     # 説明変数、目的変数の作成
     X = df.loc[:, feature_columns].values
-    Y = df.loc[:, y_column].values
+    Y = df.loc[:, target_column].values
 
     # 学習用、検証用データに分割
     (X_train, X_test, Y_train, Y_test) = train_test_split(X, Y, test_size=test_rate, random_state=123)
@@ -208,14 +204,14 @@ def simple_dtree(df, x_list, y_var, max_depth=3, regressor=False, min_samples_sp
     return model
 
 
-def BalancedRF_classifier(df, y_column, feature_columns, test_rate):
+def BalancedRFClassifier(df, target_column, feature_columns, test_rate):
 
     # 不均衡クラス分類用ランダムフォレスト
     # 混合行列や重要度の高い変数を可視化する
 
     # 説明変数、目的変数の作成
     X = df.loc[:, feature_columns].values
-    Y = df.loc[:, y_column].values
+    Y = df.loc[:, target_column].values
 
     # 学習用、検証用データに分割
     (X_train, X_test, Y_train, Y_test) = train_test_split(X, Y, test_size=test_rate, random_state=123, shuffle=True)
