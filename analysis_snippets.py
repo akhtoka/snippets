@@ -14,6 +14,9 @@ from sklearn.cluster import KMeans
 from imblearn.ensemble import BalancedRandomForestClassifier
 from IPython.display import display
 
+# import lightgbm as lgb
+import optuna.integration.lightgbm as lgb
+
 
 def hml_kmeans(clst_list, n_clst):
     """
@@ -371,11 +374,6 @@ def plot_decision_path(tree_model, df, x_vars):
     print("\nThe following samples %s share the node %s in the tree"
           % (sample_ids, common_node_id))
     print("It is %s %% of all nodes." % (100 * len(common_node_id) / n_nodes,))
-    
-# import lightgbm as lgb
-import optuna.integration.lightgbm as lgb
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
 
 
 def LGBMRegressor(df, y_column, feature_columns, test_rate=0.3):
